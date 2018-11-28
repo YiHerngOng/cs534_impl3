@@ -20,6 +20,6 @@ class Decision_Tree(object):
 	def gini_index(self):
 		
 
+
 if __name__ == '__main__':
 	DT = Decision_Tree("pa3_train_reduced.csv", "pa3_valid_reduced.csv")
-	
