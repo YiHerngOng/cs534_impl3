@@ -6,13 +6,19 @@ import sys, os, pdb
 from process_data import *
 
 class Node(object):
-  def__init__(self):
-    self.left_values = None
-    self.right_values = None
-    self.left_fetures = None
-    self.right_features = None
-    self.threshold = None
-    self.feature = None
+  def__init__(self, feature, T, y_values):
+    self.left_child = None
+    self.right_child = None
+    self.threshold = T
+    self.feature = feature
+    unique, count = np.unique(y_values, return_counts=True)
+    count_1 = count[1] # count how many 3
+    count_neg1 = count[0] # count how many 5
+    if count_1 > count_neg1:
+    	self.label = 1
+    else:
+    	self.label = -1
+
     
 class DecisionTree():
 	def __init__(self, fn_train, fn_valid, fn_test=None):
@@ -133,12 +139,20 @@ class DecisionTree():
   def build_tree(self, level):
     root = Node()
     level = 0
-    node = self.find_tree(self.x_train,self.y_train,level,max_depth,)
+    node = self.find_tree(root, self.x_train,self.y_train,level,max_depth=20)
 
   def find_tree(self, y_data, x_data, level, max_depth):
-    left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
-    left_feature, right_feature, left_value, right_value, T, real_feature = self.make_node(y_data, x_data)
-    
+  	# left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
+    left_feature, right_feature, left_value, right_value, T, real_feature = self.make_node(y_data, x_data) 
+    node = Node(real_feature, T, left_value, right_value)
+    if level <= max_depth:
+    	if len(left_value) > 0:
+    		node.left_child = find_tree(left_value, left_feature, level+1)
+    	if len(right_value) > 0:
+    		node.right_child = find_tree(right_value, right_feature, level+1)
+    return node
+
+
 
 
 if __name__ == '__main__':
