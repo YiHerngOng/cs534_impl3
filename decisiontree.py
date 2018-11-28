@@ -32,12 +32,47 @@ class DecisionTree():
     Ua =  (2*cp*cm/(cp+cm)**2)
     return (Ua-pUl-pUr)
   
-  def feature_split(self):
+  #split to different leaf
+  def split_leaf(self, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
+    left_leaf = np.array([])
+    right_leaf = np.array([])
+    for i in rang(0,len(self.x_train[:][0])-1):
+      y_value = self.y_train[i]
+      if self.x_train[i][para] <= T:
+        left_leaf = np.append(self.x_train[i][para])
+        if self.x_train[i][para] == 1:
+          leaf_clp += 1
+        else:
+          leaf_clm += 1
+      else:
+        right_leaf = np.append(self.x_train[i][para])
+        if self.x_train[i][para] == 1:
+          leaf_crp += 1
+        else:
+          leaf_crm += 1
+  return left_leaf, right_leaf, leaf_clp, leaf_clm, leaf_crp, leaf_crm
+  
+  #Make a decision tree
+  def make_node(self, previous_feature=None):
     #initialize the parameters
+    
     gini = 0
+    gini_f = 0
+    gini_temp
+        
     T = 0
+    T_f = 0
+    T_temp
+    
     feature = 0
-    fclp, fclm, fcrp, fcrm = 0, 0, 0, 0
+    tree_clp, tree_clm, tree_crp, tree_crm = 0, 0, 0, 0
+    
+    left_node = np.array([])
+    right_node = np.array([])
+    left_node_f = np.array([])
+    right_node_f = np.array([])
+    left_node_temp = np.array([])
+    right_node_temp = np.array([])
     
     #Calculate the number of result 3 and 5
     temp = 0
@@ -49,6 +84,63 @@ class DecisionTree():
     #Calculate gini-index and benefit
     for j in range(0, len(self.x_train[0][:])-1):
       for k in range(0, len(self.x_train[:][0])-1):
-        T = self.x_train[k][j]
-        if 
+        T_temp = self.x_train[k][j]
+        left_node_temp, right_node_temp, tree_clp, tree_clm, tree_crp, tree_crm = split_leaf(self, T, j, tree_clp, tree_clm, tree_crp, tree_crm)
+        gini_temp = gini_benefit(cp, cm, tree_clp, tree_clm, tree_crp, tree_crm)
+        if gini_temp > gini_f:
+          gini_f= gini_temp
+          left_node_f = left_node_temp
+          right_node_f = left_node_temp
+          T_f = T_temp
+      if gini_f > gini:
+        gini = gini_f
+        left_node = left_node_f
+        right_node = right_node_f
+        T = T_f
+  return gini, left_node, right_node, T
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
         
