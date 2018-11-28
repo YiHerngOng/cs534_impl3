@@ -5,13 +5,14 @@ import csv
 import sys, os, pdb
 from process_data import *
 
-class Node():
+class Node(object):
   def__init__(self):
-    self.left_value = None
-    self.right_value = None
-    self.left_feture = None
-    self.right_feature = None
+    self.left_values = None
+    self.right_values = None
+    self.left_fetures = None
+    self.right_features = None
     self.threshold = None
+    self.feature = None
     
 class DecisionTree():
 	def __init__(self, fn_train, fn_valid, fn_test=None):
@@ -43,7 +44,7 @@ class DecisionTree():
   #split to different leaf
   def split_leaf(self, root_node, root_feature, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
     left_leaf_value = np.array([])
-    right_leaf_value = np.arry([])
+    right_leaf_value = np.array([])
     left_leaf_feature = np.array([])
     right_leaf_feature = np.array([])
     
@@ -94,7 +95,7 @@ class DecisionTree():
     right_value_temp = np.array([])
     #others
     tree_clp, tree_clm, tree_crp, tree_crm = 0, 0, 0, 0
-    
+    feature_temp, feature, real_feature = 0, 0, 0
     #Calculate the number of root node for result 3 and 5
     temp = 0
     for i in range(0, len(root_node[:])-1):
@@ -108,24 +109,40 @@ class DecisionTree():
     else:
     #Calculate gini-index and benefit
       for j in range(0, len(root_feature[0][:])-1):
-        for k in range(0, len(root_feature[:][0])-1):
-          T_temp = self.x_train[k][j]
-          left_feature_temp, right_feature_temp, left_value_temp, right_value_temp, tree_clp, tree_clm, tree_crp, tree_crm = split_leaf(self, root_node, root_feature, T_temp, j, tree_clp, tree_clm, tree_crp, tree_crm)
-          gini_temp = gini_benefit(self, cp, cm, tree_clp, tree_clm, tree_crp, tree_crm)
+        for k in range(0, len(root_node)-1):
+          # T_temp = self.x_train[k][j]
+          feature_temp = k
+          T_temp = root_feature[k][j]
+          left_feature_temp, right_feature_temp, left_value_temp, right_value_temp, tree_clp, tree_clm, tree_crp, tree_crm = self.split_leaf(root_node, root_feature, T_temp, j, tree_clp, tree_clm, tree_crp, tree_crm)
+          gini_temp = self.gini_benefit(cp, cm, tree_clp, tree_clm, tree_crp, tree_crm)
           if gini_temp > gini_f:
             gini_f= gini_temp
             left_node_f = left_node_temp
             right_node_f = left_node_temp
             T_f = T_temp
+            feature = feature_temp
         if gini_f > gini:
           gini = gini_f
           left_node = left_node_f
           right_node = right_node_f
           T = T_f
-    return left_feature, right_feature, left_value, right_value, T
+          real_feature = feature
+    return left_feature, right_feature, left_value, right_value, T, real_feature
   
   #Make a decision tree
-  def make_tree()  
+  def build_tree(self, level):
+    root = Node()
+    level = 0
+    node = self.find_tree(self.x_train,self.y_train,level,max_depth,)
+
+  def find_tree(self, y_data, x_data, level, max_depth):
+    left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
+    left_feature, right_feature, left_value, right_value, T, real_feature = self.make_node(y_data, x_data)
+    
+
+
+if __name__ == '__main__':
+  DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv")  
         
         
         
