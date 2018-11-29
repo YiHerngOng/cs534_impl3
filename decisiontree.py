@@ -126,15 +126,19 @@ class DecisionTree():
 		# print "lol"
 		self.root = self.find_tree(self.y_train,self.x_train,level)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
+
+		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
 		for i in range(1, 21):
 			self.acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
-			print "accuracy at depth {} = {}".format(i, acc_train)
+			print "accuracy at depth {} = {}".format(i, self.acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
+		
+		print "Starting to predict valid data"
 		time_now = datetime.datetime.now()
 		for j in range(1, 21):
 			self.acc_valid = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
-			print "accuracy at depth {} = {}".format(i, acc_train)
+			print "accuracy at depth {} = {}".format(j, self.acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
 	def find_tree(self, y_data, x_data, level, max_depth=20):
@@ -155,7 +159,7 @@ class DecisionTree():
 				node.right_child = self.find_tree(right_y, right_x, level+1)
 		return node
 
-	def predict(self, y_data, x_data_row, node, level, max_level):
+	def predict(self, x_data_row, node, level, max_level):
 		if node == None:
 			return None
 		if level >= max_level:
@@ -163,14 +167,14 @@ class DecisionTree():
 		feature_index = node.feature
 		threshold = node.threshold
 		if x_data_row[feature_index] <= threshold:
-			return self.predict(y_data, x_data, node.left_child, level+1, max_depth)
+			return self.predict(x_data_row, node.left_child, level+1, max_level)
 		else:
-			return self.predict(y_data, x_data, node.right_child, level+1, max_depth)
+			return self.predict(x_data_row, node.right_child, level+1, max_level)
 
-	def accuracy(self, y_data, x_data, root, max_depth):
+	def accuracy(self, y_data, x_data, root, max_level):
 		error = 0
 		for i in range(len(y_data)):
-			label = self.predict(x_data[i], root, 0, max_depth)
+			label = self.predict(x_data[i], root, 0, max_level)
 			if label != y_data[i]:
 				error += 1
 		return (float(len(y_data)) - float(error)) / float(len(y_data))
