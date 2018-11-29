@@ -48,25 +48,15 @@ class DecisionTree():
 
 	#split to different leaf
 	def split_leaf(self, root_node, root_feature, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
-		# left_leaf_value = []
-		# right_leaf_value = []
-		# left_leaf_feature = []
-		# right_leaf_feature = []
 		leaf_clp, leaf_clm, leaf_crp, leaf_crm = 0,0,0,0
 		for i in range(0,len(root_node[:])-1):
 			y_value = root_node[i] 
 			if root_feature[i][para] <= threshold:
-				# for j in range(0,len(root_feature[i][:])-1):
-				# 	left_leaf_feature.append(root_feature[i][j])
-				# left_leaf_value.append(root_node[i])
 				if y_value == 1:
 					leaf_clp += 1
 				else:
 					leaf_clm += 1
 			else:
-				# for k in range(0,len(root_feature[i][:])):
-				# 	right_leaf_feature.append(root_feature[i][k])
-				# right_leaf_value.append(root_node[i])
 				if y_value == 1:
 					leaf_crp += 1
 				else:
@@ -86,17 +76,6 @@ class DecisionTree():
 			return count[0], 0
 
 	def partition(self, y_data, x_data, threshold, feature):
-		# for i in range(len(y_data)):
-		# 	left_leaf_value = []
-		# 	right_leaf_value = []
-		# 	left_leaf_feature = []
-		# 	right_leaf_feature = []	
-		# 	if x_data[i][feature] <= threshold:
-		# 		left_leaf_feature.append(x_data[i])
-		# 		left_leaf_value.append(y_data[i])
-		# 	else:
-		# 		right_leaf_feature.append(x_data[i])
-		# 		right_leaf_value.append(y_data[i])
 		feature_arr = x_data[:, feature]
 		left_leaf_feature = x_data[feature_arr <= threshold]
 		left_leaf_value = y_data[feature_arr <= threshold]
@@ -147,6 +126,16 @@ class DecisionTree():
 		# print "lol"
 		self.root = self.find_tree(self.y_train,self.x_train,level)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
+		time_now = datetime.datetime.now()
+		for i in range(1, 21):
+			self.acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
+			print "accuracy at depth {} = {}".format(i, acc_train)
+		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
+		time_now = datetime.datetime.now()
+		for j in range(1, 21):
+			self.acc_valid = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
+			print "accuracy at depth {} = {}".format(i, acc_train)
+		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
 	def find_tree(self, y_data, x_data, level, max_depth=20):
 		# left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
@@ -165,6 +154,26 @@ class DecisionTree():
 				print "in here"
 				node.right_child = self.find_tree(right_y, right_x, level+1)
 		return node
+
+	def predict(self, y_data, x_data_row, node, level, max_level):
+		if node == None:
+			return None
+		if level >= max_level:
+			return node.label
+		feature_index = node.feature
+		threshold = node.threshold
+		if x_data_row[feature_index] <= threshold:
+			return self.predict(y_data, x_data, node.left_child, level+1, max_depth)
+		else:
+			return self.predict(y_data, x_data, node.right_child, level+1, max_depth)
+
+	def accuracy(self, y_data, x_data, root, max_depth):
+		error = 0
+		for i in range(len(y_data)):
+			label = self.predict(x_data[i], root, 0, max_depth)
+			if label != y_data[i]:
+				error += 1
+		return (float(len(y_data)) - float(error)) / float(len(y_data))
 
 
 
