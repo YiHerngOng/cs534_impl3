@@ -4,7 +4,7 @@ import numpy as np
 import csv
 import sys, os, pdb
 import math
-from decimal import Decimal
+# from decimal import Decimal
 
 class CSV():
 	def __init__(self, filename):
@@ -20,7 +20,7 @@ class CSV():
 			for j in xrange(len(self.x[0])):
 				try:
 					# pdb.set_trace()
-					self.x[i][j] = Decimal(self.x[i][j])
+					self.x[i][j] = float(self.x[i][j])
 				except:
 					raise TypeError
 					# try:
@@ -45,7 +45,8 @@ class CSV():
 		self.y = []
 		for i in xrange(len(self.raw)):
 			# if first column is y
-			temp = ['1'] + self.raw[i][1:]
+			# temp = ['1'] + self.raw[i][1:]
+			temp = self.raw[i][1:]
 			# pdb.set_trace()
 			self.x.append(temp)
 			self.y.append(self.raw[i][0])
