@@ -115,26 +115,25 @@ class DecisionTree():
 		#Justify to split or not
 		# if cp == 0 or cm == 0:
 		# 	return 0, 0, 0, 0
-		else:
 		#Calculate gini-index and benefit
-			for j in range(len(root_feature[0])):
-				feature_temp = root_feature[:,j]
-				# best_feature_index = j 
-				# pdb.set_trace()
-				for k in range(len(root_node)):
-					T_temp = feature_temp[k]
-					left = root_node[feature_temp <= T_temp]
-					right = root_node[feature_temp > T_temp]
-					tree_clp, tree_clm = self.count_y(left)
-					tree_crp, tree_crm = self.count_y(right)
-					gini_temp = self.gini_benefit(float(cp), float(cm), float(tree_clp), float(tree_clm), float(tree_crp), float(tree_crm))
-					if gini_temp > gini_f:
-						gini_f= gini_temp
-						T_f = T_temp
-				if gini_f > gini:
-					gini = gini_f
-					T = T_f
-					best_feature_index = j
+		for j in range(len(root_feature[0])):
+			feature_temp = root_feature[:,j]
+			# best_feature_index = j 
+			# pdb.set_trace()
+			for k in range(len(root_node)):
+				T_temp = feature_temp[k]
+				left = root_node[feature_temp <= T_temp]
+				right = root_node[feature_temp > T_temp]
+				tree_clp, tree_clm = self.count_y(left)
+				tree_crp, tree_crm = self.count_y(right)
+				gini_temp = self.gini_benefit(float(cp), float(cm), float(tree_clp), float(tree_clm), float(tree_crp), float(tree_crm))
+				if gini_temp > gini_f:
+					gini_f= gini_temp
+					T_f = T_temp
+			if gini_f > gini:
+				gini = gini_f
+				T = T_f
+				best_feature_index = j
 		return T, best_feature_index, cp, cm
 
   #Make a decision tree
