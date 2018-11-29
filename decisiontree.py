@@ -40,22 +40,25 @@ class DecisionTree():
       
   #Calculate gini index and the benefit of splite feature    
 	def gini_benefit(self, cp, cm, clp, clm, crp, crm):
-		#if clp+clm==0 or crp+crm==0:
-		 # return 0
-		pUl = (2*clp*clm/((clp+clm)*(cp+cm)))
-		pUr = (2*crp*crm/((crp+crm)*(cp+cm)))
-		Ua =  (2*cp*cm/(cp+cm)**2)
-		return (Ua-pUl-pUr)
-  
+		if clp+clm==0 or crp+crm==0:
+			return 0
+		else:
+			pUl = (2*clp*clm/((clp+clm)*(cp+cm)))
+			pUr = (2*crp*crm/((crp+crm)*(cp+cm)))
+			Ua =  (2*cp*cm/(cp+cm)**2)
+			return (Ua-pUl-pUr)
+
 	#split to different leaf
 	def split_leaf(self, root_node, root_feature, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
 		left_leaf_value = []
 		right_leaf_value = []
 		left_leaf_feature = []
 		right_leaf_feature = []
-
+		leaf_clp, leaf_clm, leaf_crp, leaf_crm = 0,0,0,0
 		for i in range(0,len(root_node[:])-1):
-			y_value = root_node[i]
+			y_value = root_node[i] 
+			# pdb.set_trace()
+			# print root_feature[i][para], threshold
 			if root_feature[i][para] <= threshold:
 				for j in range(0,len(root_feature[i][:])-1):
 					left_leaf_feature.append(root_feature[i][j])
@@ -119,7 +122,9 @@ class DecisionTree():
 					# T_temp = self.x_train[k][j]
 					feature_temp = k
 					T_temp = root_feature[k][j]
+					# pdb.set_trace()
 					left_feature_temp, right_feature_temp, left_value_temp, right_value_temp, tree_clp, tree_clm, tree_crp, tree_crm = self.split_leaf(root_node, root_feature, T_temp, j, tree_clp, tree_clm, tree_crp, tree_crm)
+					# print tree_clp, tree_clm, tree_crp, tree_crm
 					gini_temp = self.gini_benefit(cp, cm, tree_clp, tree_clm, tree_crp, tree_crm)
 					if gini_temp > gini_f:
 						gini_f= gini_temp
@@ -139,6 +144,7 @@ class DecisionTree():
 	def build_tree(self):
 		level = 0
 		time_now = datetime.datetime.now()
+		# print "lol"
 		self.root = self.find_tree(self.y_train,self.x_train,level)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
@@ -146,6 +152,7 @@ class DecisionTree():
 		# left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
 		left_x, right_x, left_y, right_y, T, feature = self.make_node(y_data, x_data) 
 		node = Node(feature, T, y_data)
+		print "current level",level
 		if level <= max_depth:
 			if len(left_value) > 0:
 				node.left_child = self.find_tree(left_y, left_x, level+1)
@@ -157,8 +164,8 @@ class DecisionTree():
 
 
 if __name__ == '__main__':
-  DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-  DT.build_tree()
+	DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
+	DT.build_tree()
         
         
         
