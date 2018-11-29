@@ -150,7 +150,7 @@ class DecisionTree():
 		node = Node(feature, T, cp ,cm)
 		left_x, left_y, right_x, right_y = self.partition(y_data, x_data, T, feature)
 		print "current level",level
-		if level < max_depth-1:
+		if level <= max_depth-1:
 			print len(left_y), len(right_y)
 			if len(left_y) > 0:
 				node.left_child = self.find_tree(left_y, left_x, level+1)
