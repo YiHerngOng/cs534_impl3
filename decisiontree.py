@@ -75,26 +75,35 @@ class DecisionTree():
 
 	def count_y(self, y_data):
 		cp, cm =0,0
-		for i in range(len(y_data)):
-			if y_data[i] == 1:
-				cp+=1
-			else:
-				cm+=1
-		return cp, cm
+		unique, count = np.unique(y_data, return_counts=True)
+		if len(unique) == 2:
+			return count[1], count[0]
+		elif len(unique) == 0:
+			return 0, 0
+		elif unique[0] == -1:
+			return 0, count[0]
+		elif unique[0] == 1:
+			return count[0], 0
 
 	def partition(self, y_data, x_data, threshold, feature):
-		for i in range(len(y_data)):
-			left_leaf_value = []
-			right_leaf_value = []
-			left_leaf_feature = []
-			right_leaf_feature = []	
-			if x_data[i][feature] <= threshold:
-				left_leaf_feature.append(x_data[i][feature])
-				left_leaf_value.append(y_data[i])
-			else:
-				right_leaf_feature.append(x_data[i][feature])
-				right_leaf_value.append(y_data[i])
-			return left_leaf_feature, left_leaf_value, right_leaf_feature, right_leaf_value
+		# for i in range(len(y_data)):
+		# 	left_leaf_value = []
+		# 	right_leaf_value = []
+		# 	left_leaf_feature = []
+		# 	right_leaf_feature = []	
+		# 	if x_data[i][feature] <= threshold:
+		# 		left_leaf_feature.append(x_data[i])
+		# 		left_leaf_value.append(y_data[i])
+		# 	else:
+		# 		right_leaf_feature.append(x_data[i])
+		# 		right_leaf_value.append(y_data[i])
+		feature_arr = x_data[:, feature]
+		left_leaf_feature = x_data[feature_arr <= threshold]
+		left_leaf_value = y_data[feature_arr <= threshold]
+		right_leaf_feature = x_data[feature_arr > threshold]
+		right_leaf_value = y_data[feature_arr > threshold]
+		# pdb.set_trace()
+		return left_leaf_feature, left_leaf_value, right_leaf_feature, right_leaf_value
 
 	#Make a single node with left and right
 	def make_node(self, root_node, root_feature):
@@ -112,14 +121,9 @@ class DecisionTree():
 		best_feature_index = 0
 
 		cp, cm = self.count_y(root_node)
-		#Justify to split or not
-		# if cp == 0 or cm == 0:
-		# 	return 0, 0, 0, 0
 		#Calculate gini-index and benefit
 		for j in range(len(root_feature[0])):
 			feature_temp = root_feature[:,j]
-			# best_feature_index = j 
-			# pdb.set_trace()
 			for k in range(len(root_node)):
 				T_temp = feature_temp[k]
 				left = root_node[feature_temp <= T_temp]
@@ -153,10 +157,12 @@ class DecisionTree():
 		node = Node(feature, T, cp ,cm)
 		left_x, left_y, right_x, right_y = self.partition(y_data, x_data, T, feature)
 		print "current level",level
-		if level <= max_depth:
+		if level < max_depth-1:
+			print len(left_y), len(right_y)
 			if len(left_y) > 0:
 				node.left_child = self.find_tree(left_y, left_x, level+1)
 			if len(right_y) > 0:
+				print "in here"
 				node.right_child = self.find_tree(right_y, right_x, level+1)
 		return node
 
@@ -166,6 +172,7 @@ class DecisionTree():
 if __name__ == '__main__':
 	DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
 	DT.build_tree()
+
         
         
         
