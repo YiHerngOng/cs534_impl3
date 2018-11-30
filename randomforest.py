@@ -13,13 +13,81 @@ class Node(object):
 	    self.right_child = None
 	    self.threshold = T
 	    self.feature = feature
+
 	    if cp>cm:
 	    	self.label = 1
+	    	self.percent = float(cp) / (float(cp) + float(cm))
 	    else:
 	    	self.label = -1
-
+	    	self.percent = float(cm) / (float(cp) + float(cm))
 
 class RandomForest():
+	def __init__(self, num_tree, m_features, depth):
+		self.num_tree = num_tree
+		self.m_features = m_features
+		self.depth = depth
+
+	def build_forest(self, fn_train, fn_valid):
+		self.forest = []
+		self.DT = DecisionTree(fn_train, fn_valid)
+
+		print "Building forest now"
+		time_now = datetime.datetime.now()
+		for i in range(self.num_tree):
+			x_train_feature = self.sampling_features(self.DT.x_train)
+			self.DT.build_tree(x_train_feature, self.depth)
+			self.forest.append(self.DT.root)
+		print "Time taken to build forest", datetime.datetime.now() - time_now
+		# pdb.set_trace()
+		print "Now calc. accuracy"
+		time_now = datetime.datetime.now()
+		train_accuracy = self.forrest_accuracy(self.DT.y_train, self.DT.x_train)
+		valid_accuracy = self.forrest_accuracy(self.DT.y_valid, self.DT.x_valid)
+		print "Time taken to calc accuracy", datetime.datetime.now() - time_now
+		print "train_accuracy of {} trees = {}".format(self.num_tree, train_accuracy)
+		print "valid_accuracy of {} trees = {}".format(self.num_tree, valid_accuracy)
+		return train_accuracy, valid_accuracy
+
+	def forrest_accuracy(self, y_data, x_data):
+		error = 0
+		for i in range(len(y_data)):
+			labels = []
+			percents = []
+			for j in range(self.num_tree):
+				label, percent = self.DT.predict_y(x_data[i], self.forest[j], 0, self.depth)
+				labels.append(label)
+				percents.append(percent)
+			labels = np.array(labels)
+			# pdb.set_trace()
+			if self.num_tree == 1:
+				vote = labels[0]
+			else:
+				try:
+					vote = np.bincount(labels).argmax()
+					print "in here"
+				except:
+					vote = labels[percents.index(max(percents))]
+			if vote != y_data[i]:
+				error += 1
+		return (float(len(y_data)) - float(error)) / float(len(y_data))
+		
+	#make 10 features subsample		
+	def sampling_features(self, x_train):
+		# print len(x_train)
+		# pdb.set_trace()
+		for i in range(self.m_features):
+			index_feature = random.randint(0,99)
+			# print index_feature
+			# pdb.set_trace()
+			if i == 0:
+				x_feature = np.reshape(x_train[:,index_feature], (len(x_train[:,index_feature]), 1))
+			else:
+				x_feature = np.concatenate((x_feature, np.array([x_train[:,index_feature]]).T), axis=1)
+			# x_feature = np.column_stack(x_train[:,index_feature])
+			# x_valid_feature = np.concatenate((x_valid[:][index_feature]).T)
+		return x_feature	
+
+class DecisionTree(object):
 	def __init__(self, fn_train, fn_valid, fn_test=None):
 		self.csv_train = CSV(fn_train)
 		self.csv_train.extract_XY()
@@ -37,15 +105,7 @@ class RandomForest():
 			self.csv_test.categorize_Y()
 			self.x_test, self.y_test = self.csv_test.convert_all_to_numbers()
 	
-	#make 10 features subsample
-	def subsample(self):
-		for i in range(10):
-			index_feature = random.randint(1,101)
-			x_feature = np.concatenate((self.x_train[:][index_feature]).T)
-			x_valid_feature = np.concatenate((self.x_valid[:][index_feature]).T)
-		return x_feature, x_valid_feature
-
- #Calculate gini index and the benefit of splite feature    
+	#Calculate gini index and the benefit of splite feature    
 	def gini_benefit(self, cp, cm, clp, clm, crp, crm):
 		if clp+clm==0 or crp+crm==0:
 			return 0
@@ -56,7 +116,7 @@ class RandomForest():
 			Ua =  (2*cp*cm/(cp+cm)**2)
 			return (Ua-pUl-pUr)
 
-#split to different leaf
+	#split to different leaf
 	def split_leaf(self, root_node, root_feature, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
 		leaf_clp, leaf_clm, leaf_crp, leaf_crm = 0,0,0,0
 		for i in range(0,len(root_node[:])-1):
@@ -129,73 +189,80 @@ class RandomForest():
 				best_feature_index = j
 		return T, best_feature_index, cp, cm
 
-  #Make a decision tree
-	def build_tree(self, forest_feature, valid_forest_feature):
-		level = 0
+ 	#Make a decision tree
+	def build_tree(self, x_train, max_depth):
 		time_now = datetime.datetime.now()
-		# print "lol"
-		self.root = self.find_tree(self.y_train,forest_feature,level)
+		self.root = self.find_tree(self.y_train,x_train,0,max_depth)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
+	def validation_at_each_depth(self, max_level):
 		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
-		for i in range(1, 21):
-			self.acc_train = self.accuracy(self.y_train, forest_feature, self.root, i)
-			print "accuracy at depth {} = {}".format(i, self.acc_train)
+		for i in range(num_level):
+			acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
+			print "accuracy at depth {} = {}".format(i, acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
 		
 		print "Starting to predict valid data"
 		time_now = datetime.datetime.now()
-		for j in range(1, 21):
-			self.acc_valid = self.accuracy(self.y_valid, valid_forest_feature, self.root, j) 	
-			print "accuracy at depth {} = {}".format(j, self.acc_valid)
+		for j in range(max_level):
+			acc_valid = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
+			print "accuracy at depth {} = {}".format(j, acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
-	def find_tree(self, y_data, x_data, level, max_depth=20):
-		# left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
-		start = datetime.datetime.now()
+	def find_tree(self, y_data, x_data, current_level, max_depth):
+		# start = datetime.datetime.now()
 		T, feature, cp, cm = self.make_node(y_data, x_data)
-		print "time spent on node", datetime.datetime.now() - start
+		# print "time spent on node", datetime.datetime.now() - start
 		# pdb.set_trace()
 		node = Node(feature, T, cp ,cm)
 		left_x, left_y, right_x, right_y = self.partition(y_data, x_data, T, feature)
-		print "current level",level
-		if level < max_depth-1:
-			print len(left_y), len(right_y)
+		# print "current level",current_level
+		if current_level <= max_depth-1:
+			# print len(left_y), len(right_y)
 			if len(left_y) > 0:
-				node.left_child = self.find_tree(left_y, left_x, level+1)
+				node.left_child = self.find_tree(left_y, left_x, current_level+1, max_depth)
 			if len(right_y) > 0:
-				print "in here"
-				node.right_child = self.find_tree(right_y, right_x, level+1)
+				# print "in here"
+				node.right_child = self.find_tree(right_y, right_x, current_level+1, max_depth)
 		return node
 
-	def predict(self, x_data_row, node, level, max_level):
-		if node == None:
-			return None
-		if level >= max_level:
-			return node.label
+	def predict_y(self, x_data_row, node, current_level, max_depth):
+		if current_level >= max_depth:
+			return node.label, node.percent
 		feature_index = node.feature
 		threshold = node.threshold
 		if x_data_row[feature_index] <= threshold:
-			return self.predict(x_data_row, node.left_child, level+1, max_level)
+			if node.left_child != None:
+				return self.predict_y(x_data_row, node.left_child, current_level+1, max_depth)
+			else:
+				return node.label, node.percent
 		else:
-			return self.predict(x_data_row, node.right_child, level+1, max_level)
+			if node.right_child != None:
+				return self.predict_y(x_data_row, node.right_child, current_level+1, max_depth)
+			else:
+				return node.label, node.percent
 
-def accuracy(self, y_data, x_data, root, max_level):
+	def accuracy(self, y_data, x_data, root, level):
 		error = 0
 		for i in range(len(y_data)):
-			label = self.predict(x_data[i], root, 0, max_level)
+			label = self.predict_y(x_data[i], root, 0, level)
 			if label != y_data[i]:
 				error += 1
 		return (float(len(y_data)) - float(error)) / float(len(y_data))
 
-
-
-
 if __name__ == '__main__':
-	DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
+	# DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
 	num_tree = np.array([1, 2, 5, 10, 25])
+	# num_tree = np.array([3])
+	num_level = 9
+	m_features = 10
+	fn = open("rt_accuracy.csv", "wb")
 	for i in num_tree:
-		for j in range (i):
-			x_forest_feature, x_valid_forest_feature = DT.subsample()
-			DT.build_tree(x_forest_feature, x_valid_forest_feature)
+		RF = RandomForest(i, m_features, num_level)
+		train_acc, valid_acc = RF.build_forest("pa3_train_reduced.csv", "pa3_valid_reduced.csv")
+		fn.write(str(train_acc))
+		fn.write(",")
+		fn.write(str(valid_acc))
+		fn.write("\n")
+	fn.close()

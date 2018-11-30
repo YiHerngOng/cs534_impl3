@@ -160,16 +160,22 @@ class DecisionTree():
 		return node
 
 	def predict(self, x_data_row, node, level, max_level):
-		if node == None:
-			return None
+		# if node == None:
+		# 	return None
 		if level >= max_level:
 			return node.label
 		feature_index = node.feature
 		threshold = node.threshold
 		if x_data_row[feature_index] <= threshold:
-			return self.predict(x_data_row, node.left_child, level+1, max_level)
+			if node.left_child != None:
+				return self.predict(x_data_row, node.left_child, level+1, max_level)
+			else:
+				return node.label
 		else:
-			return self.predict(x_data_row, node.right_child, level+1, max_level)
+			if node.right_child != None:
+				return self.predict(x_data_row, node.right_child, level+1, max_level)
+			else:
+				return node.label
 
 	def accuracy(self, y_data, x_data, root, max_level):
 		error = 0
@@ -177,6 +183,7 @@ class DecisionTree():
 			label = self.predict(x_data[i], root, 0, max_level)
 			if label != y_data[i]:
 				error += 1
+				flag.append(i)
 		return (float(len(y_data)) - float(error)) / float(len(y_data))
 
 
