@@ -16,10 +16,10 @@ class Node(object):
 
 	    if cp>cm:
 	    	self.label = 1
-	    	self.percent = float(cp) / (float(cp) + float(cm))
+	    	# self.percent = float(cp) / (float(cp) + float(cm))
 	    else:
 	    	self.label = -1
-	    	self.percent = float(cm) / (float(cp) + float(cm))
+	    	# self.percent = float(cm) / (float(cp) + float(cm))
 
 class RandomForest():
 	def __init__(self, num_tree, m_features, depth):
@@ -33,10 +33,15 @@ class RandomForest():
 
 		print "Building forest now"
 		time_now = datetime.datetime.now()
+		x_train_feature_arr = []
+		x_valid_feature_arr = []
 		for i in range(self.num_tree):
-			x_train_feature = self.sampling_features(self.DT.x_train)
-			self.DT.build_tree(x_train_feature, self.depth)
+			x_train_feature_arr = self.sampling_features(self.DT.x_train)
+			# print x_train_feature_arr
+			self.DT.build_tree(self.DT.x_train, self.depth, x_train_feature_arr)
 			self.forest.append(self.DT.root)
+			# x_train_feature_arr.append(x_train_feature)
+			# x_valid_feature_arr.append(x_valid_feature)
 		print "Time taken to build forest", datetime.datetime.now() - time_now
 		# pdb.set_trace()
 		print "Now calc. accuracy"
@@ -52,21 +57,33 @@ class RandomForest():
 		error = 0
 		for i in range(len(y_data)):
 			labels = []
-			percents = []
+			# percents = []
 			for j in range(self.num_tree):
-				label, percent = self.DT.predict_y(x_data[i], self.forest[j], 0, self.depth)
+				# pdb.set_trace()
+				# print j, i
+				label = self.DT.predict_y(x_data[i], self.forest[j], 0, self.depth)
 				labels.append(label)
-				percents.append(percent)
+				# percents.append(percent)
 			labels = np.array(labels)
 			# pdb.set_trace()
 			if self.num_tree == 1:
 				vote = labels[0]
 			else:
-				try:
-					vote = np.bincount(labels).argmax()
-					print "in here"
-				except:
-					vote = labels[percents.index(max(percents))]
+				# pdb.set_trace()
+				unique, count = np.unique(labels, return_counts = True)
+				if len(unique) ==2:
+					if count[0] > count[1]:
+						vote = unique[0]
+					if count[0] < count[1]:
+						vote = unique[1]
+					if count[0] == count[1]:
+						temp = np.random.randint(2)
+						if temp == 0:
+							vote = unique[0]
+						else:
+							vote = unique[1]
+				else:
+					vote = unique[0]
 			if vote != y_data[i]:
 				error += 1
 		return (float(len(y_data)) - float(error)) / float(len(y_data))
@@ -75,18 +92,27 @@ class RandomForest():
 	def sampling_features(self, x_train):
 		# print len(x_train)
 		# pdb.set_trace()
+		prev = 0
+		arr = []
 		for i in range(self.m_features):
 			index_feature = random.randint(0,99)
+			while prev == index_feature:
+				index_feature = random.randint(0,99)
+			prev = index_feature
+			arr.append(index_feature)
 			# print index_feature
 			# pdb.set_trace()
-			if i == 0:
-				x_feature = np.reshape(x_train[:,index_feature], (len(x_train[:,index_feature]), 1))
-			else:
-				x_feature = np.concatenate((x_feature, np.array([x_train[:,index_feature]]).T), axis=1)
+			# if i == 0:
+			# 	x_feature = np.reshape(x_train[:,index_feature], (len(x_train[:,index_feature]), 1))
+			# 	x_feature_train = np.reshape(x_valid[:,index_feature], (len(x_valid[:,index_feature]), 1))
+			# else:
+			# 	x_feature = np.concatenate((x_feature, np.array([x_train[:,index_feature]]).T), axis=1)
+			# 	x_feature_train = np.reshape(x_valid[:,index_feature], (len(x_valid[:,index_feature]), 1))
+
 			# x_feature = np.column_stack(x_train[:,index_feature])
 			# x_valid_feature = np.concatenate((x_valid[:][index_feature]).T)
-		return x_feature	
-
+		# return x_feature, x_feature_train	
+		return np.array(arr)
 class DecisionTree(object):
 	def __init__(self, fn_train, fn_valid, fn_test=None):
 		self.csv_train = CSV(fn_train)
@@ -138,12 +164,13 @@ class DecisionTree(object):
 		unique, count = np.unique(y_data, return_counts=True)
 		if len(unique) == 2:
 			return count[1], count[0]
-		elif len(unique) == 0:
+		if len(unique) == 0:
 			return 0, 0
-		elif unique[0] == -1:
-			return 0, count[0]
-		elif unique[0] == 1:
-			return count[0], 0
+		if len(unique) == 1:
+			if unique[0] == -1:
+				return 0, count[0]
+			if unique[0] == 1:
+				return count[0], 0
 
 	def partition(self, y_data, x_data, threshold, feature):
 		feature_arr = x_data[:, feature]
@@ -155,7 +182,7 @@ class DecisionTree(object):
 		return left_leaf_feature, left_leaf_value, right_leaf_feature, right_leaf_value
 
 	#Make a single node with left and right
-	def make_node(self, root_node, root_feature):
+	def make_node(self, root_node, root_feature, m_features=[]):
 	#initialize the parameters
 	#gini
 		gini = 0
@@ -171,7 +198,12 @@ class DecisionTree(object):
 
 		cp, cm = self.count_y(root_node)
 		#Calculate gini-index and benefit
-		for j in range(len(root_feature[0])):
+		# for j in range(len(root_feature[0])):
+		if len(m_features) == 0:
+			temp = range(len(root_feature[0]))
+		else:
+			temp = m_features
+		for j in temp:			
 			feature_temp = root_feature[:,j]
 			for k in range(len(root_node)):
 				T_temp = feature_temp[k]
@@ -190,9 +222,9 @@ class DecisionTree(object):
 		return T, best_feature_index, cp, cm
 
  	#Make a decision tree
-	def build_tree(self, x_train, max_depth):
+	def build_tree(self, x_train, max_depth, m_features=[]):
 		time_now = datetime.datetime.now()
-		self.root = self.find_tree(self.y_train,x_train,0,max_depth)
+		self.root = self.find_tree(self.y_train,x_train,0,max_depth, m_features)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
 	def validation_at_each_depth(self, max_level):
@@ -210,9 +242,9 @@ class DecisionTree(object):
 			print "accuracy at depth {} = {}".format(j, acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
-	def find_tree(self, y_data, x_data, current_level, max_depth):
+	def find_tree(self, y_data, x_data, current_level, max_depth, m_features=[]):
 		# start = datetime.datetime.now()
-		T, feature, cp, cm = self.make_node(y_data, x_data)
+		T, feature, cp, cm = self.make_node(y_data, x_data, m_features)
 		# print "time spent on node", datetime.datetime.now() - start
 		# pdb.set_trace()
 		node = Node(feature, T, cp ,cm)
@@ -221,27 +253,28 @@ class DecisionTree(object):
 		if current_level <= max_depth-1:
 			# print len(left_y), len(right_y)
 			if len(left_y) > 0:
-				node.left_child = self.find_tree(left_y, left_x, current_level+1, max_depth)
+				node.left_child = self.find_tree(left_y, left_x, current_level+1, max_depth, m_features)
 			if len(right_y) > 0:
 				# print "in here"
-				node.right_child = self.find_tree(right_y, right_x, current_level+1, max_depth)
+				node.right_child = self.find_tree(right_y, right_x, current_level+1, max_depth, m_features)
 		return node
 
 	def predict_y(self, x_data_row, node, current_level, max_depth):
+		# print x_data_row
 		if current_level >= max_depth:
-			return node.label, node.percent
+			return node.label
 		feature_index = node.feature
 		threshold = node.threshold
 		if x_data_row[feature_index] <= threshold:
 			if node.left_child != None:
 				return self.predict_y(x_data_row, node.left_child, current_level+1, max_depth)
 			else:
-				return node.label, node.percent
+				return node.label
 		else:
 			if node.right_child != None:
 				return self.predict_y(x_data_row, node.right_child, current_level+1, max_depth)
 			else:
-				return node.label, node.percent
+				return node.label
 
 	def accuracy(self, y_data, x_data, root, level):
 		error = 0
@@ -253,16 +286,16 @@ class DecisionTree(object):
 
 if __name__ == '__main__':
 	# DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-	num_tree = np.array([1, 2, 5, 10, 25])
+	num_tree = np.array([3])
 	# num_tree = np.array([3])
 	num_level = 9
 	m_features = 10
-	fn = open("rt_accuracy.csv", "wb")
+	# fn = open("rt_accuracy.csv", "wb")
 	for i in num_tree:
 		RF = RandomForest(i, m_features, num_level)
 		train_acc, valid_acc = RF.build_forest("pa3_train_reduced.csv", "pa3_valid_reduced.csv")
-		fn.write(str(train_acc))
-		fn.write(",")
-		fn.write(str(valid_acc))
-		fn.write("\n")
-	fn.close()
+		# fn.write(str(train_acc))
+		# fn.write(",")
+		# fn.write(str(valid_acc))
+		# fn.write("\n")
+	# fn.close()
