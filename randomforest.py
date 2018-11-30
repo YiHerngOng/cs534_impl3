@@ -42,7 +42,8 @@ class RandomForest():
 		for i in range(10):
 			index_feature = random.randint(1,101)
 			x_feature = np.concatenate((self.x_train[:][index_feature]).T)
-		return x_feature
+			x_valid_feature = np.concatenate((self.x_valid[:][index_feature]).T)
+		return x_feature, x_valid_feature
 
  #Calculate gini index and the benefit of splite feature    
 	def gini_benefit(self, cp, cm, clp, clm, crp, crm):
@@ -129,7 +130,7 @@ class RandomForest():
 		return T, best_feature_index, cp, cm
 
   #Make a decision tree
-	def build_tree(self, forest_feature):
+	def build_tree(self, forest_feature, valid_forest_feature):
 		level = 0
 		time_now = datetime.datetime.now()
 		# print "lol"
@@ -146,7 +147,7 @@ class RandomForest():
 		print "Starting to predict valid data"
 		time_now = datetime.datetime.now()
 		for j in range(1, 21):
-			self.acc_valid = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
+			self.acc_valid = self.accuracy(self.y_valid, valid_forest_feature, self.root, j) 	
 			print "accuracy at depth {} = {}".format(j, self.acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
@@ -196,5 +197,5 @@ if __name__ == '__main__':
 	num_tree = np.array([1, 2, 5, 10, 25])
 	for i in num_tree:
 		for j in range (i):
-			x_forest_feature = DT.subsample()
-			DT.build_tree(x_forest_feature)
+			x_forest_feature, x_valid_forest_feature = DT.subsample()
+			DT.build_tree(x_forest_feature, x_valid_forest_feature)
