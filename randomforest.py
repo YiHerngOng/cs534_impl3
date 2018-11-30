@@ -129,17 +129,17 @@ class RandomForest():
 		return T, best_feature_index, cp, cm
 
   #Make a decision tree
-	def build_tree(self):
+	def build_tree(self, forest_feature):
 		level = 0
 		time_now = datetime.datetime.now()
 		# print "lol"
-		self.root = self.find_tree(self.y_train,self.x_train,level)
+		self.root = self.find_tree(self.y_train,forest_feature,level)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
 		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
 		for i in range(1, 21):
-			self.acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
+			self.acc_train = self.accuracy(self.y_train, forest_feature, self.root, i)
 			print "accuracy at depth {} = {}".format(i, self.acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
 		
@@ -193,4 +193,8 @@ def accuracy(self, y_data, x_data, root, max_level):
 
 if __name__ == '__main__':
 	DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-	DT.build_tree()
+	num_tree = np.array([1, 2, 5, 10, 25])
+	for i in num_tree:
+		for j in range (i):
+			x_forest_feature = DT.subsample()
+			DT.build_tree(x_forest_feature)
