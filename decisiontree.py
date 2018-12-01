@@ -35,7 +35,7 @@ class DecisionTree():
 			self.csv_test.categorize_Y()
 			self.x_test, self.y_test = self.csv_test.convert_all_to_numbers()
       
-  #Calculate gini index and the benefit of splite feature    
+  #Calculate gini index and the benefit of split feature    
 	def gini_benefit(self, cp, cm, clp, clm, crp, crm):
 		if clp+clm==0 or crp+crm==0:
 			return 0
@@ -45,23 +45,6 @@ class DecisionTree():
 			pUr = (2*crp*crm/((crp+crm)*(cp+cm)))
 			Ua =  (2*cp*cm/(cp+cm)**2)
 			return (Ua-pUl-pUr)
-
-	#split to different leaf
-	def split_leaf(self, root_node, root_feature, threshold, para, leaf_clp, leaf_clm, leaf_crp, leaf_crm):
-		leaf_clp, leaf_clm, leaf_crp, leaf_crm = 0,0,0,0
-		for i in range(0,len(root_node[:])-1):
-			y_value = root_node[i] 
-			if root_feature[i][para] <= threshold:
-				if y_value == 1:
-					leaf_clp += 1
-				else:
-					leaf_clm += 1
-			else:
-				if y_value == 1:
-					leaf_crp += 1
-				else:
-					leaf_crm += 1
-		return leaf_clp, leaf_clm, leaf_crp, leaf_crm
 
 	def count_y(self, y_data):
 		cp, cm =0,0
@@ -86,8 +69,7 @@ class DecisionTree():
 
 	#Make a single node with left and right
 	def make_node(self, root_node, root_feature):
-	#initialize the parameters
-	#gini
+		#initialize the parameters
 		gini = 0
 		gini_f = 0
 		gini_temp = 0
@@ -105,8 +87,8 @@ class DecisionTree():
 			feature_temp = root_feature[:,j]
 			for k in range(len(root_node)):
 				T_temp = feature_temp[k]
-				left = root_node[feature_temp <= T_temp]
-				right = root_node[feature_temp > T_temp]
+				left = root_node[feature_temp <= T_temp] # y_data that go to left
+				right = root_node[feature_temp > T_temp] # y_data that go to right
 				tree_clp, tree_clm = self.count_y(left)
 				tree_crp, tree_crm = self.count_y(right)
 				gini_temp = self.gini_benefit(float(cp), float(cm), float(tree_clp), float(tree_clm), float(tree_crp), float(tree_crm))
@@ -120,43 +102,44 @@ class DecisionTree():
 		return T, best_feature_index, cp, cm
 
   #Make a decision tree
-	def build_tree(self):
+	def build_tree(self, max_depth):
+		print "Building decision tree now..."
 		level = 0
 		time_now = datetime.datetime.now()
-		# print "lol"
-		self.root = self.find_tree(self.y_train,self.x_train,level)
+		self.root = self.find_tree(self.y_train,self.x_train,level,max_depth)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
+	def validation_at_each_depth(self, max_level):
 		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
-		for i in range(1, 21):
+		for i in range(1, max_level+1):
 			self.acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
 			print "accuracy at depth {} = {}".format(i, self.acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
 		
 		print "Starting to predict valid data"
 		time_now = datetime.datetime.now()
-		for j in range(1, 21):
+		for j in range(1, max_level+1):
 			self.acc_valid = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
 			print "accuracy at depth {} = {}".format(j, self.acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
 
-	def find_tree(self, y_data, x_data, level, max_depth=20):
+	def find_tree(self, y_data, x_data, level, max_depth):
 		# left_feature, right_feature, left_value, right_value, T, real_feature = None, None, None, None, 0,0
-		start = datetime.datetime.now()
+		# start = datetime.datetime.now()
 		T, feature, cp, cm = self.make_node(y_data, x_data)
-		print "time spent on node", datetime.datetime.now() - start
+		# print "time spent on node", datetime.datetime.now() - start
 		# pdb.set_trace()
 		node = Node(feature, T, cp ,cm)
 		left_x, left_y, right_x, right_y = self.partition(y_data, x_data, T, feature)
-		print "current level",level
+		# print "current level",level
 		if level <= max_depth-1:
-			print len(left_y), len(right_y)
+			# print len(left_y), len(right_y)
 			if len(left_y) > 0:
-				node.left_child = self.find_tree(left_y, left_x, level+1)
+				node.left_child = self.find_tree(left_y, left_x, level+1, max_depth)
 			if len(right_y) > 0:
-				print "in here"
-				node.right_child = self.find_tree(right_y, right_x, level+1)
+				# print "in here"
+				node.right_child = self.find_tree(right_y, right_x, level+1, max_depth)
 		return node
 
 	def predict(self, x_data_row, node, level, max_level):
@@ -183,15 +166,16 @@ class DecisionTree():
 			label = self.predict(x_data[i], root, 0, max_level)
 			if label != y_data[i]:
 				error += 1
-				flag.append(i)
 		return (float(len(y_data)) - float(error)) / float(len(y_data))
 
 
 
 
 if __name__ == '__main__':
+	max_depth = sys.argv[1]
 	DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-	DT.build_tree()
+	DT.build_tree(int(max_depth))
+	DT.validation_at_each_depth(int(max_depth))
 
         
         

@@ -64,7 +64,7 @@ class DecisionTree(object):
 					leaf_crm += 1
 		return leaf_clp, leaf_clm, leaf_crp, leaf_crm
 
-	def count_y(self, y_data, weights):
+	def count_y(self, y_data, weights): # for adaboost
 		# pdb.set_trace()
 		cp, cm =0,0
 		a = 1
@@ -147,19 +147,8 @@ class DecisionTree(object):
 		self.root = self.find_tree(self.y_train,self.x_train,level, D_weights, max_depth)
 		print "Time taken to build a tree", datetime.datetime.now() - time_now
 
-		print "Starting to predict train data"
-		time_now = datetime.datetime.now()
-		for i in range(1, max_depth+1):
-			self.acc_train, error_array = self.accuracy(self.y_train, self.x_train, self.root, i)
-			print "accuracy at depth {} = {}".format(i, self.acc_train)
-		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
-		
-		print "Starting to predict valid data"
-		time_now = datetime.datetime.now()
-		for j in range(1, max_depth+1):
-			self.acc_valid, error_array = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
-			print "accuracy at depth {} = {}".format(j, self.acc_valid)
-		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
+		self.acc_train, error_array = self.accuracy(self.y_train, self.x_train, self.root, max_depth)
+		self.acc_valid, error_array = self.accuracy(self.y_valid, self.x_valid, self.root, max_depth) 	
 		return error_array
 
 	def find_tree(self, y_data, x_data, level, D_weights, max_depth):
@@ -208,13 +197,14 @@ class DecisionTree(object):
 		return (float(len(y_data)) - float(error)) / float(len(y_data)), error_array
 
 class adaboost():
-	def __init__(self, fn_train, fn_valid, max_depth):
+	def __init__(self, fn_train, fn_valid, max_depth, L):
 		self.fn_train = fn_train
 		self.fn_valid = fn_valid
 		self.max_depth = max_depth
-		# self.L = L
+		self.L = L
 		self.DT = DecisionTree(self.fn_train, self.fn_valid)
-
+		print "Number of loops: ", self.L
+		print "Maximum depth of tree: ", self.max_depth
 
 	def error_weighted(self, error_location, weighted_vector):
 		flag = []
@@ -239,41 +229,43 @@ class adaboost():
 		return para_array
 
 	def normalize(self, weighted_vector):
-		sum_weighted = np.sum(weighted_vector)
-		for i in range(len(self.DT.y_train)):
-			weighted_vector[i] = float(weighted_vector[i])/float(sum_weighted)
+		# sum_weighted = np.sum(weighted_vector)
+		# for i in range(len(self.DT.y_train)):
+		# 	weighted_vector[i] = (float(weighted_vector[i]) - float(min(weighted_vector)))/(float(max(weighted_vector)) - float(min(weighted_vector)))
+		# weighted_vector = weighted_vector / np.linalg.norm(weighted_vector)
+		weighted_vector = weighted_vector / float(sum(weighted_vector))
 		return weighted_vector
 
 	def boosting(self):
 		D = []
 		parameters = []
 
-		# for i in self.L:
-			#Initialize D(i) the vector of weights 
+		# Initialize D(i) the vector of weights 
 		for j in range(len(self.DT.y_train)):
 			D.append(float(1)/float(len(self.DT.y_train)))
-		# pdb.set_trace()
+			# pdb.set_trace()
 		D = np.array(D)
-		for k in range(20):
+		for k in range(self.L):
 			time_now = datetime.datetime.now()
-			print "Running adaboost loop {}".format(k)
+			print "Running adaboost loop {}".format(k+1)
 			error_sample=self.DT.build_tree(D, self.max_depth)
 			training_error=self.error_weighted(error_sample, D)
+			print "training_error = ", training_error
 			a = (float(1)/float(2))*math.log((float(1)-float(training_error))/float(training_error)) # alpha value
 			parameters = self.parameter_cal(a, error_sample) # calc. exponential
 			D = np.array(D)
 			parameters = np.array(parameters)
 			D = D*parameters
 			D = self.normalize(D)
-			print "Time taken to run a adaboost loop", datetime.datetime.now() - time_now				
-			print "Current adaboost loop {} accuracy = train : {}, valid: {}".format(k, self.DT.acc_train, self.DT.acc_valid)
+			print "Time taken to run a adaboost loop", datetime.datetime.now() - time_now		
+			if k+1 == self.L
+				print "Current adaboost accuracy with {} loops = training data : {}, validation data: {}".format(k+1, self.DT.acc_train, self.DT.acc_valid)
 
 
 
 if __name__ == '__main__':
-	# DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-	# DT.build_tree()
 	# num_adaboost = np.array([1, 5, 10, 20])
-	max_depth = 9
-	A = adaboost("pa3_train_reduced.csv", "pa3_valid_reduced.csv", max_depth)
+	num_adaboost = sys.argv[1]
+	max_depth = sys.argv[2]
+	A = adaboost("pa3_train_reduced.csv", "pa3_valid_reduced.csv", int(max_depth), int(num_adaboost))
 	A.boosting()

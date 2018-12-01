@@ -16,10 +16,8 @@ class Node(object):
 
 	    if cp>cm:
 	    	self.label = 1
-	    	# self.percent = float(cp) / (float(cp) + float(cm))
 	    else:
 	    	self.label = -1
-	    	# self.percent = float(cm) / (float(cp) + float(cm))
 
 class RandomForest():
 	def __init__(self, num_tree, m_features, depth):
@@ -31,27 +29,26 @@ class RandomForest():
 		self.forest = []
 		self.DT = DecisionTree(fn_train, fn_valid)
 
-		print "Building forest now"
+		print "Building {} tree(s) forest now".format(self.num_tree)
 		time_now = datetime.datetime.now()
 		x_train_feature_arr = []
 		x_valid_feature_arr = []
 		for i in range(self.num_tree):
 			x_train_feature_arr = self.sampling_features(self.DT.x_train)
-			# print x_train_feature_arr
+
 			self.DT.build_tree(self.DT.x_train, self.depth, x_train_feature_arr)
 			self.forest.append(self.DT.root)
-			# x_train_feature_arr.append(x_train_feature)
-			# x_valid_feature_arr.append(x_valid_feature)
+
 		print "Time taken to build forest", datetime.datetime.now() - time_now
 		# pdb.set_trace()
 		print "Now calc. accuracy"
-		time_now = datetime.datetime.now()
+		# time_now = datetime.datetime.now()
 		train_accuracy = self.forrest_accuracy(self.DT.y_train, self.DT.x_train)
 		valid_accuracy = self.forrest_accuracy(self.DT.y_valid, self.DT.x_valid)
 		print "Time taken to calc accuracy", datetime.datetime.now() - time_now
-		print "train_accuracy of {} trees = {}".format(self.num_tree, train_accuracy)
-		print "valid_accuracy of {} trees = {}".format(self.num_tree, valid_accuracy)
-		return train_accuracy, valid_accuracy
+		print "train_accuracy of {} trees with {} features = {}".format(self.num_tree, self.m_features, train_accuracy)
+		print "valid_accuracy of {} trees with {} features = {}".format(self.num_tree, self.m_features, valid_accuracy)
+		# return train_accuracy, valid_accuracy
 
 	def forrest_accuracy(self, y_data, x_data):
 		error = 0
@@ -96,23 +93,12 @@ class RandomForest():
 		arr = []
 		for i in range(self.m_features):
 			index_feature = random.randint(0,99)
-			while prev == index_feature:
-				index_feature = random.randint(0,99)
-			prev = index_feature
+			# while prev == index_feature:
+			# 	index_feature = random.randint(0,99)
+			# prev = index_feature
 			arr.append(index_feature)
-			# print index_feature
-			# pdb.set_trace()
-			# if i == 0:
-			# 	x_feature = np.reshape(x_train[:,index_feature], (len(x_train[:,index_feature]), 1))
-			# 	x_feature_train = np.reshape(x_valid[:,index_feature], (len(x_valid[:,index_feature]), 1))
-			# else:
-			# 	x_feature = np.concatenate((x_feature, np.array([x_train[:,index_feature]]).T), axis=1)
-			# 	x_feature_train = np.reshape(x_valid[:,index_feature], (len(x_valid[:,index_feature]), 1))
-
-			# x_feature = np.column_stack(x_train[:,index_feature])
-			# x_valid_feature = np.concatenate((x_valid[:][index_feature]).T)
-		# return x_feature, x_feature_train	
 		return np.array(arr)
+
 class DecisionTree(object):
 	def __init__(self, fn_train, fn_valid, fn_test=None):
 		self.csv_train = CSV(fn_train)
@@ -178,7 +164,6 @@ class DecisionTree(object):
 		left_leaf_value = y_data[feature_arr <= threshold]
 		right_leaf_feature = x_data[feature_arr > threshold]
 		right_leaf_value = y_data[feature_arr > threshold]
-		# pdb.set_trace()
 		return left_leaf_feature, left_leaf_value, right_leaf_feature, right_leaf_value
 
 	#Make a single node with left and right
@@ -230,7 +215,7 @@ class DecisionTree(object):
 	def validation_at_each_depth(self, max_level):
 		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
-		for i in range(num_level):
+		for i in range(max_level):
 			acc_train = self.accuracy(self.y_train, self.x_train, self.root, i)
 			print "accuracy at depth {} = {}".format(i, acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
@@ -286,16 +271,9 @@ class DecisionTree(object):
 
 if __name__ == '__main__':
 	# DT = DecisionTree("pa3_train_reduced.csv", "pa3_valid_reduced.csv") 
-	num_tree = np.array([3])
-	# num_tree = np.array([3])
-	num_level = 9
-	m_features = 10
-	# fn = open("rt_accuracy.csv", "wb")
-	for i in num_tree:
-		RF = RandomForest(i, m_features, num_level)
-		train_acc, valid_acc = RF.build_forest("pa3_train_reduced.csv", "pa3_valid_reduced.csv")
-		# fn.write(str(train_acc))
-		# fn.write(",")
-		# fn.write(str(valid_acc))
-		# fn.write("\n")
-	# fn.close()
+	# num_tree = np.array([1,2,5,10,25])
+	num_tree = sys.argv[1]
+	num_level = sys.argv[2]
+	m_features = sys.argv[3]
+	RF = RandomForest(int(num_tree), int(m_features), int(num_level))
+	RF.build_forest("pa3_train_reduced.csv", "pa3_valid_reduced.csv")
