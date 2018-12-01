@@ -149,14 +149,14 @@ class DecisionTree(object):
 
 		print "Starting to predict train data"
 		time_now = datetime.datetime.now()
-		for i in range(1, max_depth):
+		for i in range(1, max_depth+1):
 			self.acc_train, error_array = self.accuracy(self.y_train, self.x_train, self.root, i)
 			print "accuracy at depth {} = {}".format(i, self.acc_train)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now
 		
 		print "Starting to predict valid data"
 		time_now = datetime.datetime.now()
-		for j in range(1, max_depth):
+		for j in range(1, max_depth+1):
 			self.acc_valid, error_array = self.accuracy(self.y_valid, self.x_valid, self.root, j) 	
 			print "accuracy at depth {} = {}".format(j, self.acc_valid)
 		print "Time taken to determine accuracy", datetime.datetime.now() - time_now	
@@ -231,7 +231,7 @@ class adaboost():
 		para_array = []
 		para_wrong = math.exp(alpha)
 		para_correct = math.exp(-alpha)
-		for i in range(len(self.y_train)):
+		for i in range(len(self.DT.y_train)):
 			if i in error_location:
 				para_array.append(para_wrong)
 			else:
